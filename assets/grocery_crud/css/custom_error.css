@@ -1,0 +1,44 @@
+/* Style for validation error box */
+.report-div.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 15px 0;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+}
+
+/* Each <p> inside error box */
+.report-div.error p {
+    margin: 6px 0;
+}
+//* In your custom CSS file (e.g., custom_error.css) */
+.btn {
+    padding: 5px 10px;
+    font-size: 14px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
