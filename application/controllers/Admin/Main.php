@@ -12,35 +12,37 @@ class Main extends CI_Controller
         }
         $this->load->model('Admin_model');
     }
-   public function index()
+    public function index()
     {
         // Fetch Live Data from Model
         $data['total_lost'] = $this->Admin_model->get_total_lost_items();
         $data['total_found'] = $this->Admin_model->get_total_found_items();
         $data['total_resolved'] = $this->Admin_model->get_total_resolved_cases();
-        
+
+        $data['notifications'] = $this->Admin_model->get_latest_notifications(5);
+
         // Data for Charts
         $data['category_data'] = $this->Admin_model->get_items_by_category();
         $data['weekly_data'] = $this->Admin_model->get_weekly_reports();
-            $data['location_data'] = $this->Admin_model->get_top_locations(4); // Top 4 locations
-    $data['status_data'] = $this->Admin_model->get_status_counts();
+        $data['location_data'] = $this->Admin_model->get_top_locations(4); // Top 4 locations
+        $data['status_data'] = $this->Admin_model->get_status_counts();
 
         $data['title'] = "Admin Dashboard";
-        
+
         $this->load->view('Admin/template/header', $data);
         $this->load->view('admin/template/sidebar');
-        // 'data' array ko dashboard view mein pass karein
-        $this->load->view('Admin/Main/dashboard', $data); 
+        $this->load->view('Admin/Main/dashboard', $data);
         $this->load->view('Admin/template/footer');
     }
-public function claim_requests() {
+    public function claim_requests()
+    {
         $crud = new grocery_CRUD();
 
         $crud->set_table('claims');
         $crud->set_subject('Claim Request');
 
         // Fields
-        $crud->columns('id', 'full_name', 'email', 'phone', 'proof_of_ownership', 'additional_details','status', 'created_at');
+        $crud->columns('id', 'full_name', 'email', 'phone', 'proof_of_ownership', 'additional_details', 'status', 'created_at');
         $crud->fields('status');
 
         // File Upload
@@ -48,14 +50,14 @@ public function claim_requests() {
 
         // Display Labels
         $crud->display_as('full_name', 'Full Name')
-             ->display_as('email', 'Email Address')
-             ->display_as('phone', 'Phone Number')
-             ->display_as('proof_of_ownership', 'Proof of Ownership')
-             ->display_as('additional_details', 'Additional Details')
-             ->display_as('created_at', 'Submitted At');
+            ->display_as('email', 'Email Address')
+            ->display_as('phone', 'Phone Number')
+            ->display_as('proof_of_ownership', 'Image')
+            ->display_as('additional_details', 'Additional Details')
+            ->display_as('created_at', 'Submitted At');
 
 
-          // Render output
+        // Render output
         $output = $crud->render();
 
         $data['output'] = $output;
@@ -66,46 +68,138 @@ public function claim_requests() {
         $this->load->view('Admin/crud', (array)$data);
         $this->load->view('Admin/template/footer');
     }
-  public function lostitems()
-{
-    $this->load->library('grocery_CRUD');
+    public function lostitems()
+    {
+        $this->load->library('grocery_CRUD');
 
-    try {
-        $crud = new grocery_CRUD();
+        try {
+            $crud = new grocery_CRUD();
 
-        $crud->set_table('lost_items');
-        $crud->set_subject('Lost Item');
+            $crud->set_table('lost_items');
+            $crud->set_subject('Lost Item');
 
-        // add category field
-        $crud->columns('item_name', 'category_id', 'description', 'date_lost', 'location_lost', 'status');
-        $crud->fields('item_name', 'category_id', 'description', 'date_lost', 'location_lost', 'image', 'status');
-        $crud->required_fields('item_name', 'category_id', 'date_lost', 'location_lost');
+            // add category field
+            $crud->columns('item_name', 'category_id', 'description', 'date_lost', 'location_lost', 'status');
+            $crud->fields('item_name', 'category_id', 'description', 'date_lost', 'location_lost', 'image', 'status');
+            $crud->required_fields('item_name', 'category_id', 'date_lost', 'location_lost');
 
-        // relation for dropdown
-        $crud->set_relation('category_id', 'categories', 'category_name');
+            // relation for dropdown
+            $crud->set_relation('category_id', 'categories', 'category_name');
 
-        $crud->set_field_upload('image', 'assets/uploads');
+            $crud->set_field_upload('image', 'assets/uploads');
 
-        $crud->field_type('status', 'dropdown', [
-            'Pending'   => 'Pending',
-            'Found'     => 'Found',
-            'Returned'  => 'Returned'
-        ]);
+            $crud->field_type('status', 'dropdown', [
+                'Pending'   => 'Pending',
+                'Found'     => 'Found',
+                'Returned'  => 'Returned'
+            ]);
 
-        // Render output
-        $output = $crud->render();
+                 $crud->add_action(
+            '', 
+            '', 
+            '', 
+            'fa fa-envelope', 
+            array($this, 'send_email_callback')
+        );
+            // Render output
+            $output = $crud->render();
 
-        $data['title'] = "Lost Items";
-        $data['output'] = $output;
+            $data['title'] = "Lost Items";
+            $data['output'] = $output;
 
-        $this->load->view('Admin/template/header', $data);
-        $this->load->view('Admin/template/sidebar', $data);
-        $this->load->view('Admin/crud', $data);
-        $this->load->view('Admin/template/footer', $data);
-    } catch (Exception $e) {
-        show_error($e->getMessage() . ' --- ' . $e->getTraceAsString());
+            $this->load->view('Admin/template/header', $data);
+            $this->load->view('Admin/template/sidebar', $data);
+            $this->load->view('Admin/crud', $data);
+            $this->load->view('Admin/template/footer', $data);
+        } catch (Exception $e) {
+            show_error($e->getMessage() . ' --- ' . $e->getTraceAsString());
+        }
     }
+
+    public function send_email_callback($primary_key, $row)
+{
+    // Dynamic URL for the "Send Email" action
+    return site_url('Admin/Main/send_found_email/' . $primary_key);
 }
+
+    public function send_found_email($id)
+{
+    // Fetch item and user info
+    $item = $this->db->get_where('lost_items', ['id' => $id])->row();
+
+    if (!$item) {
+        show_error('Item not found.');
+        return;
+    }
+
+    $to_email  = $item->user_email;
+    $user_name = $item->user_name;
+    $item_name = $item->item_name;
+
+    // Email configuration
+    $config = array(
+        'protocol'    => 'smtp',
+        'smtp_host'   => 'smtp.gmail.com',
+        'smtp_port'   => 587,
+        'smtp_user'   => 'foundandlost291@gmail.com',
+        'smtp_pass'   => 'ngfx vjci xmec jusq',
+        'smtp_crypto' => 'tls',
+        'mailtype'    => 'html',
+        'charset'     => 'utf-8',
+        'newline'     => "\r\n",
+        'crlf'        => "\r\n",
+        'wordwrap'    => TRUE
+    );
+
+    $this->load->library('email');
+    $this->email->initialize($config);
+    $this->email->from('foundandlost291@gmail.com', 'Lost & Found System');
+    $this->email->to($to_email);
+    $this->email->subject('Your Lost Item Has Been Found!');
+
+    // Email body
+    $email_body = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #0072b5; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; background: #f9f9f9; }
+                .footer { text-align: center; padding: 15px; font-size: 12px; color: #666; }
+                .btn { background-color: #0072b5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>Lost & Found System</h2>
+                </div>
+                <div class='content'>
+                    <h3>Hello {$user_name},</h3>
+                    <p>Good news! Your lost item <strong>\"{$item_name}\"</strong> has been found.</p>
+                    <p>Please reach out to the administrator as soon as possible to receive your item.</p>
+                </div>
+                <div class='footer'>
+                    <p>&copy; 2025 Lost & Found System. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    ";
+
+    $this->email->message($email_body);
+
+    if ($this->email->send()) {
+        $this->session->set_flashdata('success', 'Email sent successfully to ' . $to_email);
+    } else {
+        $this->session->set_flashdata('error', 'Failed to send email. Please check email configuration.');
+    }
+
+    redirect('Admin/Main/lostitems');
+}
+
 
     public function founditems()
     {
@@ -149,38 +243,39 @@ public function claim_requests() {
         }
     }
     public function categories()
-{
-    $this->load->library('grocery_CRUD');
+    {
+        $this->load->library('grocery_CRUD');
 
-    try {
-        $crud = new grocery_CRUD();
+        try {
+            $crud = new grocery_CRUD();
 
-        $crud->set_table('categories');
-        $crud->set_subject('Category');
+            $crud->set_table('categories');
+            $crud->set_subject('Category');
 
-        // jo columns list view mein dikhane hain
-        $crud->columns('id', 'category_name');
+            // jo columns list view mein dikhane hain
+            $crud->columns('id', 'category_name');
 
-        // form fields
-        $crud->fields('category_name');
+            // form fields
+            $crud->fields('category_name');
 
-        // required fields
-        $crud->required_fields('category_name');
+            // required fields
+            $crud->required_fields('category_name');
 
-        // render output
-        $output = $crud->render();
+            // render output
+            $output = $crud->render();
 
-        $data['title'] = "Categories";
-        $data['output'] = $output;
+            $data['title'] = "Categories";
+            $data['output'] = $output;
 
-        $this->load->view('Admin/template/header', $data);
-        $this->load->view('Admin/template/sidebar', $data);
-        $this->load->view('Admin/crud', $data);
-        $this->load->view('Admin/template/footer', $data);
-    } catch (Exception $e) {
-        show_error($e->getMessage() . ' --- ' . $e->getTraceAsString());
+            $this->load->view('Admin/template/header', $data);
+            $this->load->view('Admin/template/sidebar', $data);
+            $this->load->view('Admin/crud', $data);
+            $this->load->view('Admin/template/footer', $data);
+        } catch (Exception $e) {
+            show_error($e->getMessage() . ' --- ' . $e->getTraceAsString());
+        }
     }
-}
+
 
 
     public function admins()

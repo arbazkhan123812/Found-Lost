@@ -232,72 +232,73 @@ class Main extends CI_Controller
     }
 
     // Verify OTP and save to database
-    public function verify_otp()
-    {
-        header('Content-Type: application/json');
+  public function verify_otp()
+{
+    header('Content-Type: application/json');
 
-        $report_id = $this->input->post('report_id');
-        $entered_otp = $this->input->post('otp');
+    $report_id   = $this->input->post('report_id');
+    $entered_otp = $this->input->post('otp');
 
-        $pending_reports = $this->session->userdata('pending_reports') ?? [];
+    $pending_reports = $this->session->userdata('pending_reports') ?? [];
 
-        if (!isset($pending_reports[$report_id])) {
+    if (!isset($pending_reports[$report_id])) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid report session. Please submit the form again.'
+        ]);
+        return;
+    }
+
+    $report_data = $pending_reports[$report_id];
+
+    // ✅ Fix: cast to string for comparison
+    if ((string)$report_data['otp'] === (string)$entered_otp) {
+        $lost_item_data = [
+            'item_name'   => $report_data['item_name'],
+            'category_id' => $report_data['category_id'],
+            'description' => $report_data['description'],
+            'date_lost'   => $report_data['date_lost'],
+            'location_lost' => $report_data['location_lost'],
+            'image'       => $report_data['image'],
+            'user_name'   => $report_data['user_name'],
+            'user_email'  => $report_data['user_email'],
+            'user_phone'  => $report_data['user_phone'],
+            'status'      => 'Pending',
+            'created_at'  => date('Y-m-d H:i:s'),
+            'updated_at'  => date('Y-m-d H:i:s')
+        ];
+
+        $this->db->insert('lost_items', $lost_item_data);
+        $insert_id = $this->db->insert_id();
+
+        if ($insert_id) {
+            unset($pending_reports[$report_id]);
+            $this->session->set_userdata('pending_reports', $pending_reports);
+             $this->send_item_listed_email(
+                $report_data['user_email'],
+                $report_data['user_name'],
+                $report_data['item_name']
+            );
+
             echo json_encode([
-                'success' => false,
-                'message' => 'Invalid report session. Please submit the form again.'
+                'success' => true,
+                'message' => 'Your lost item has been reported successfully!'
             ]);
-            return;
-        }
-
-        $report_data = $pending_reports[$report_id];
-
-        print_r("reportdata" . $report_data['otp']);
-        print_r("entered" . $entered_otp);
-        
-
-        if ($report_data['otp'] === $entered_otp) {
-            // OTP verified - save to database
-            $lost_item_data = [
-                'item_name' => $report_data['item_name'],
-                'category_id' => $report_data['category_id'],
-                'description' => $report_data['description'],
-                'date_lost' => $report_data['date_lost'],
-                'location_lost' => $report_data['location_lost'],
-                'image' => $report_data['image'],
-                'user_name' => $report_data['user_name'],
-                'user_email' => $report_data['user_email'],
-                'user_phone' => $report_data['user_phone'],
-                'status' => 'Pending',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
-            ];
-
-            $this->db->insert('lost_items', $lost_item_data);
-            $insert_id = $this->db->insert_id();
-
-            if ($insert_id) {
-                // Remove from pending reports
-                unset($pending_reports[$report_id]);
-                $this->session->set_userdata('pending_reports', $pending_reports);
-
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Your lost item has been reported successfully!'
-                ]);
-            } else {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Failed to save report. Please try again.'
-                ]);
-            }
         } else {
             echo json_encode([
                 'success' => false,
-                'message' => 'Invalid OTP. Please try again.',
-                'email' => $report_data['user_email']
+                'message' => 'Failed to save report. Please try again.'
             ]);
         }
+    } else {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid OTP. Please try again.',
+            'email'   => $report_data['user_email']
+        ]);
     }
+}
+
 
     // Resend OTP
     public function resend_otp()
@@ -477,4 +478,60 @@ class Main extends CI_Controller
 
         return $this->email->send();
     }
+    private function send_item_listed_email($to_email, $user_name, $item_name)
+{
+    $config = array(
+        'protocol'    => 'smtp',
+        'smtp_host'   => 'smtp.gmail.com',
+        'smtp_port'   => 587,
+        'smtp_user'   => 'foundandlost291@gmail.com',
+        'smtp_pass'   => 'ngfx vjci xmec jusq',
+        'smtp_crypto' => 'tls',
+        'mailtype'    => 'html',
+        'charset'     => 'utf-8',
+        'newline'     => "\r\n",
+        'crlf'        => "\r\n",
+        'wordwrap'    => TRUE
+    );
+
+    $this->email->initialize($config);
+    $this->email->from('foundandlost291@gmail.com', 'Lost & Found System');
+    $this->email->to($to_email);
+    $this->email->subject('Your Lost Item Has Been Successfully Listed');
+
+    $email_body = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #28a745; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; background: #f9f9f9; }
+                .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>Lost & Found System</h2>
+                </div>
+                <div class='content'>
+                    <h3>Hello {$user_name},</h3>
+                    <p>Your lost item <strong>\"{$item_name}\"</strong> has been successfully listed in our system.</p>
+                    <p>Our team and community will now help in finding it as soon as possible.</p>
+                    <p>Thank you for trusting the <strong>Lost & Found System</strong>.</p>
+                </div>
+                <div class='footer'>
+                    <p>&copy; 2025 Lost & Found System. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    ";
+
+    $this->email->message($email_body);
+    return $this->email->send();
+}
+
 }

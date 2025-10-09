@@ -42,10 +42,35 @@ class Admin_model extends CI_Model
     }
 
 
+    public function get_latest_notifications($limit = 5)
+{
+    // Lost Items (latest)
+    $this->db->select("id, item_name AS title, 'lost_item' AS type, created_at");
+    $this->db->from("lost_items");
+    $this->db->order_by("created_at", "DESC");
+    $this->db->limit($limit);
+    $lost_items = $this->db->get()->result_array();
 
-    // Admin_model.php mein add karein
+    // Claims (latest)
+    $this->db->select("id, full_name AS title, 'claim' AS type, created_at");
+    $this->db->from("claims");
+    $this->db->order_by("created_at", "DESC");
+    $this->db->limit($limit);
+    $claims = $this->db->get()->result_array();
 
-// 1. Top Locations Data
+    // Merge dono results
+    $notifications = array_merge($lost_items, $claims);
+
+    // Sort combined array by created_at (latest first)
+    usort($notifications, function ($a, $b) {
+        return strtotime($b['created_at']) - strtotime($a['created_at']);
+    });
+
+    // Sirf last 5 hi return karo
+    return array_slice($notifications, 0, $limit);
+}
+
+
 public function get_top_locations($limit = 5)
 {
     $this->db->select('location_lost, COUNT(id) as report_count');

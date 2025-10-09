@@ -1,3 +1,4 @@
+
 <style>
     /* Enhanced Dashboard Styles */
     .charts-grid {
@@ -6,6 +7,8 @@
         gap: 24px;
         margin: 24px 0;
     }
+
+
 
     @media (max-width: 1024px) {
         .charts-grid {
@@ -36,6 +39,118 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
         transform: translateY(-2px);
     }
+
+    .top-navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 25px;
+        background: #fff;
+        border-bottom: 1px solid #e2e8f0;
+        position: relative;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .navbar-right {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        position: relative;
+    }
+
+    /* Notification Icon */
+    .notification-wrapper {
+        position: relative;
+    }
+
+    .notification-icon {
+        position: relative;
+        cursor: pointer;
+        font-size: 20px;
+        color: #555;
+        margin-right: 20px;
+    }
+
+    .notification-icon:hover {
+        color: #1e2a38;
+    }
+
+    .badge {
+        position: absolute;
+        right: -10px;
+        background-color: #ff4b5c;
+        color: white;
+        border-radius: 50%;
+        font-size: 11px;
+        padding: 2px 5px;
+    }
+
+    /* Dropdown Menu */
+    .notification-menu {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 35px;
+        background: #fff;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        width: 250px;
+        z-index: 1000;
+        overflow: hidden;
+    }
+
+    .notification-menu h6 {
+        background: #1e2a38;
+        color: white;
+        padding: 10px;
+        margin: 0;
+        font-size: 14px;
+    }
+
+    .notification-menu ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .notification-menu ul li {
+        padding: 10px 15px;
+        font-size: 13px;
+        color: #333;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .notification-menu ul li:hover {
+        background: #f8f9fa;
+    }
+
+    .notification-menu .view-all {
+        display: block;
+        text-align: center;
+        padding: 10px;
+        font-size: 13px;
+        color: #1e2a38;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .notification-menu .view-all:hover {
+        background: #f0f8ff;
+    }
+
+    /* Active (show menu) */
+    .notification-wrapper.active .notification-menu {
+        display: block;
+    }
+
 
     .chart-card h3 {
         font-size: 1.25rem;
@@ -94,9 +209,20 @@
     }
 
     /* Color variants for stat cards */
-    .bg-primary-light { background: linear-gradient(135deg, #e3f2fd, #bbdefb); color: #1565c0; }
-    .bg-success-light { background: linear-gradient(135deg, #e8f5e8, #c8e6c9); color: #2e7d32; }
-    .bg-warning-light { background: linear-gradient(135deg, #fff3e0, #ffcc80); color: #ef6c00; }
+    .bg-primary-light {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        color: #1565c0;
+    }
+
+    .bg-success-light {
+        background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+        color: #2e7d32;
+    }
+
+    .bg-warning-light {
+        background: linear-gradient(135deg, #fff3e0, #ffcc80);
+        color: #ef6c00;
+    }
 
     /* Chart.js Customizations */
     .chartjs-tooltip {
@@ -112,11 +238,11 @@
         .chart-card h3 {
             font-size: 1.1rem;
         }
-        
+
         .stat-card h4 {
             font-size: 1.75rem;
         }
-        
+
         .stat-card i {
             font-size: 1.75rem;
         }
@@ -128,35 +254,71 @@
         <button class="mobile-toggle" id="mobileToggle">
             <i class="fas fa-bars"></i>
         </button>
-        <span class="navbar-brand mb-0 h5">Welcome, <?= $this->session->userdata('admin_name'); ?></span>
-        <div>
-            <a href="<?= base_url('Admin/Auth/logout'); ?>" class="btn btn-sm btn-danger">
+
+        <span class="navbar-brand mb-0 h5">
+            Welcome, <?= $this->session->userdata('admin_name'); ?>
+        </span>
+
+        <div class="navbar-right">
+            <!-- 🔔 Notification Bell -->
+            <div class="notification-wrapper">
+                <div class="notification-icon" id="notificationBell">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge" id="notificationCount"><?= count($notifications); ?></span>
+                </div>
+
+                <!-- Dropdown Menu -->
+                <div class="notification-menu" id="notificationMenu">
+                    <h6>Notifications</h6>
+                    <ul>
+                        <?php if (!empty($notifications)): ?>
+                            <?php foreach ($notifications as $note): ?>
+                                <li>
+                                    <?php if ($note['type'] == 'lost_item'): ?>
+                                        <i class="fas fa-box text-warning"></i>
+                                        <span>New lost item: <strong><?= htmlspecialchars($note['title']); ?></strong></span>
+                                    <?php elseif ($note['type'] == 'claim'): ?>
+                                        <i class="fas fa-file-alt text-info"></i>
+                                        <span>New claim by <strong><?= htmlspecialchars($note['title']); ?></strong></span>
+                                    <?php endif; ?>
+                                    <small style="color:#777; font-size:11px; display:block;">
+                                        <?= date("M d, Y h:i A", strtotime($note['created_at'])); ?>
+                                    </small>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <li><i class="fas fa-bell-slash"></i> No recent notifications</li>
+                        <?php endif; ?>
+                    </ul>
+                    <a href="#" class="view-all">View All</a>
+                </div>
+
+            </div>
+
+            <a href="<?= base_url('Admin/Auth/logout'); ?>" class="btn btn-sm btn-danger logout-btn">
                 <i class="fas fa-power-off"></i> Logout
             </a>
         </div>
     </nav>
 
+
     <div class="content-area">
         <div class="demo-card">
             <h3>Dashboard Overview</h3>
             <p>Welcome to the Lost & Found Admin Panel. Here you can manage all system data and analytics.</p>
-            
+
             <div class="stats-grid">
                 <div class="stat-card bg-primary-light">
                     <i class="fas fa-search"></i>
-                    <h4><?= $total_lost; ?></h4> 
+                    <h4><?= $total_lost; ?></h4>
                     <p>Pending Lost Items</p>
                 </div>
                 <div class="stat-card bg-success-light">
                     <i class="fas fa-box-open"></i>
-                    <h4><?= $total_found; ?></h4> 
+                    <h4><?= $total_found; ?></h4>
                     <p>Found Items</p>
                 </div>
-                <div class="stat-card bg-warning-light">
-                    <i class="fas fa-check-circle"></i>
-                    <h4><?= $total_resolved; ?></h4>
-                    <p>Resolved Cases</p>
-                </div>
+                
             </div>
         </div>
 
@@ -427,4 +589,20 @@
             }
         });
     }
+</script>
+<script>
+    const bell = document.getElementById('notificationBell');
+    const menu = document.getElementById('notificationMenu');
+    const wrapper = document.querySelector('.notification-wrapper');
+
+    bell.addEventListener('click', () => {
+        wrapper.classList.toggle('active');
+    });
+
+    // Close menu if clicked outside
+    document.addEventListener('click', (event) => {
+        if (!wrapper.contains(event.target)) {
+            wrapper.classList.remove('active');
+        }
+    });
 </script>

@@ -19,6 +19,58 @@
             --hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
         }
 
+
+#loaderOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    opacity: 1;
+    visibility: visible;
+}
+
+#loaderOverlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Remove the old .show/.hide classes and use this approach instead */
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #0072b5;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #ccc;
+            border-top-color: #0072b5;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--light-bg);
@@ -325,6 +377,9 @@
 </head>
 
 <body>
+    <div id="loaderOverlay">
+        <div class="spinner"></div>
+    </div>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top">
         <div class="container">
@@ -350,7 +405,7 @@
                 <div class="d-flex">
                     <a href="#" class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#reportLostModal">
                         <i class="fas fa-plus me-1"></i>Report Item
-                    </a> 
+                    </a>
                 </div>
             </div>
         </div>
@@ -363,7 +418,7 @@
             <div class="row">
                 <div class="col-lg-8 mx-auto text-center">
                     <h1 class="hero-title">Find Your Lost Belongings</h1>
-                    <p class="hero-subtitle">Search through our database of lost and found items. Reuniting people with their valuables since 2023.</p>
+                    <p class="hero-subtitle">Search through our database of lost and found items. Reuniting people with their valuables since 2025.</p>
                     <div class="search-container">
                         <div class="input-group">
                             <input type="text" class="form-control search-input" placeholder="Search lost or found items by name, category, or location...">
@@ -512,7 +567,7 @@
                                                             </div>
 
                                                             <button class="btn claim-btn" data-bs-toggle="modal" data-bs-target="#claimModal">
-                                                                <i class="fas fa-hand-holding-usd me-2"></i>Claim This Item
+                                                                <i class="fas fa-hand-holding-usd me-2"></i>Report Found
                                                             </button>
                                                         </div>
                                                     </div>
@@ -619,7 +674,7 @@
             <div class="row">
                 <div class="col-lg-4 mb-4">
                     <h5 class="footer-title"><i class="fas fa-box-open me-2"></i>Lost & Found</h5>
-                    <p>Helping people reunite with their lost belongings since 2023. Our mission is to create a community where lost items find their way back home.</p>
+                    <p>Helping people reunite with their lost belongings since 2025. Our mission is to create a community where lost items find their way back home.</p>
                 </div>
                 <div class="col-lg-2 mb-4">
                     <h5 class="footer-title">Quick Links</h5>
@@ -650,7 +705,7 @@
             </div>
             <hr>
             <div class="text-center">
-                <p class="mb-0">&copy; 2023 Lost & Found. All rights reserved.</p>
+                <p class="mb-0">&copy; 2025 Lost & Found. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -675,7 +730,7 @@
                             <div class="mt-4">
                                 <p><strong>Category:</strong> Wallet</p>
                                 <p><strong>Location:</strong> <i class="fas fa-map-marker-alt me-2"></i>Central Park, NYC</p>
-                                <p><strong>Date Reported:</strong> <i class="far fa-calendar me-2"></i>May 15, 2023</p>
+                                <p><strong>Date Reported:</strong> <i class="far fa-calendar me-2"></i>May 15, 2025</p>
                                 <p><strong>Description:</strong></p>
                                 <p>Black leather wallet with multiple credit cards and ID. Contains a photo of a golden retriever. Reward offered for return.</p>
                             </div>
@@ -811,7 +866,7 @@
                             <input type="tel" name="phone" class="form-control" placeholder="Enter your phone number">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Proof of Ownership</label>
+                            <label class="form-label">Founded Item Image</label>
                             <input type="file" name="proof_of_ownership" class="form-control">
                             <div class="form-text">Upload any documents or photos that prove this item belongs to you.</div>
                         </div>
@@ -980,7 +1035,7 @@
                                                 
                                                 <button class="btn claim-btn" data-bs-toggle="modal" 
                                                         data-bs-target="#claimModal" data-item-id="${item.id}">
-                                                    <i class="fas fa-hand-holding-usd me-2"></i>Claim This Item
+                                                    <i class="fas fa-hand-holding-usd me-2"></i>Report Found Item
                                                 </button>
                                             </div>
                                         </div>
@@ -1092,69 +1147,154 @@
     });
 
     // OTP Verification Function
-    function showOTPVerification(reportId, email) {
-        Swal.fire({
-            title: 'Verify Your Email',
-            html: `
+function showOTPVerification(reportId, email) {
+    Swal.fire({
+        title: 'Verify Your Email',
+        html: `
             <p>We've sent a 6-digit OTP to <strong>${email}</strong></p>
             <p>Please check your email and enter the OTP below:</p>
-            <input type="text" id="otpInput" class="swal2-input" placeholder="Enter OTP" maxlength="6" style="text-align: center; font-size: 18px; letter-spacing: 8px;">
-            <p class="text-muted mt-2" style="font-size: 12px;">Didn't receive OTP? <a href="javascript:void(0)" onclick="resendOTP(${reportId}, '${email}')">Resend</a></p>
+            <input type="text" id="otpInput" class="swal2-input" placeholder="Enter OTP" maxlength="6" 
+                style="text-align: center; font-size: 18px; letter-spacing: 8px;">
+            <button id="resendOTPBtn" type="button" 
+                style="margin-top: 10px; background: none; border: none; color: #2c5aa0; font-weight: 600; cursor: pointer;">
+                Resend OTP
+            </button>
+            <div id="otpMessage" style="margin-top:8px; font-size: 14px;"></div>
+            <div id="countdown" style="margin-top:5px; font-size:13px; color:gray;"></div>
         `,
-            icon: 'info',
-            showCancelButton: true,
-            confirmButtonText: 'Verify OTP',
-            cancelButtonText: 'Cancel',
-            preConfirm: () => {
-                const otp = Swal.getPopup().querySelector('#otpInput').value;
-                if (!otp || otp.length !== 6) {
-                    Swal.showValidationMessage('Please enter a valid 6-digit OTP');
-                    return false;
-                }
-                return otp;
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Verify OTP',
+        cancelButtonText: 'Cancel',
+        didOpen: () => {
+            const resendBtn = Swal.getPopup().querySelector('#resendOTPBtn');
+            const msgBox = Swal.getPopup().querySelector('#otpMessage');
+            const countdownBox = Swal.getPopup().querySelector('#countdown');
+            let cooldownTimer = null;
+
+            resendBtn.addEventListener('click', function () {
+                resendBtn.disabled = true;
+                resendBtn.textContent = 'Resending...';
+                msgBox.innerHTML = '';
+                countdownBox.innerHTML = '';
+
+                $.ajax({
+                    url: '<?php echo base_url("User/Main/resend_otp"); ?>',
+                    type: 'POST',
+                    data: { report_id: reportId },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.success) {
+                            msgBox.innerHTML = `<span style="color:green;">OTP has been resent successfully!</span>`;
+                            startCooldown(); // Start countdown
+                        } else {
+                            msgBox.innerHTML = `<span style="color:red;">${response.message || 'OTP could not be sent. Try again.'}</span>`;
+                            resendBtn.textContent = 'Resend OTP';
+                            resendBtn.disabled = false;
+                        }
+                    },
+                    error: function () {
+                        msgBox.innerHTML = `<span style="color:red;">An error occurred. Please try again later.</span>`;
+                        resendBtn.textContent = 'Resend OTP';
+                        resendBtn.disabled = false;
+                    }
+                });
+            });
+
+            // Cooldown Timer Function
+            function startCooldown() {
+                let timeLeft = 30;
+                resendBtn.textContent = 'Resend OTP';
+                resendBtn.disabled = true;
+                resendBtn.style.color = 'gray';
+                countdownBox.innerHTML = `You can resend in <strong>${timeLeft}</strong> seconds`;
+
+                cooldownTimer = setInterval(() => {
+                    timeLeft--;
+                    countdownBox.innerHTML = `You can resend in <strong>${timeLeft}</strong> seconds`;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(cooldownTimer);
+                        countdownBox.innerHTML = '';
+                        resendBtn.disabled = false;
+                        resendBtn.style.color = '#2c5aa0';
+                    }
+                }, 1000);
             }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                verifyOTP(reportId, result.value);
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-                // User cancelled - delete the pending report
-                deletePendingReport(reportId);
+        },
+        preConfirm: () => {
+            const otp = Swal.getPopup().querySelector('#otpInput').value;
+            if (!otp || otp.length !== 6) {
+                Swal.showValidationMessage('Please enter a valid 6-digit OTP');
+                return false;
             }
-        });
-    }
+            return otp;
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            verifyOTP(reportId, result.value);
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            deletePendingReport(reportId);
+        }
+    });
+}
 
     // Verify OTP
-    function verifyOTP(reportId, otp) {
-        $.ajax({
-            url: '<?php echo base_url("User/Main/verify_otp"); ?>',
-            type: 'POST',
-            data: {
-                report_id: reportId,
-                otp: otp
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    Swal.fire({
-                        title: 'Success!',
-                        text: response.message || 'Your lost item report has been submitted successfully.',
-                        icon: 'success',
-                        confirmButtonText: 'OK'
-                    }).then(() => {
-                        // Refresh the page or update item list
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire('Error', response.message || 'Invalid OTP. Please try again.', 'error').then(() => {
-                        showOTPVerification(reportId, response.email || '');
-                    });
-                }
-            },
-            error: function() {
-                Swal.fire('Error', 'An error occurred during OTP verification.', 'error');
+    // Alternative: Using SweetAlert loader
+function verifyOTP(reportId, otp) {
+    // Show SweetAlert loading
+    Swal.fire({
+        title: 'Verifying OTP...',
+        text: 'Please wait while we verify your OTP',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    $.ajax({
+        url: '<?php echo base_url("User/Main/verify_otp"); ?>',
+        type: 'POST',
+        data: {
+            report_id: reportId,
+            otp: otp
+        },
+        dataType: 'json',
+        success: function(response) {
+            Swal.close();
+            
+            if (response.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: response.message || 'Your lost item report has been submitted successfully.',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: response.message || 'Invalid OTP. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'Try Again'
+                }).then(() => {
+                    showOTPVerification(reportId, response.email || '');
+                });
             }
-        });
-    }
+        },
+        error: function() {
+            Swal.close();
+            Swal.fire({
+                title: 'Error',
+                text: 'An error occurred during OTP verification.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    });
+}
+
 
     // Resend OTP
     function resendOTP(reportId, email) {
@@ -1169,7 +1309,7 @@
                 if (response.success) {
                     Swal.fire('Success', 'OTP has been resent to your email.', 'info');
                 } else {
-                    Swal.fire('Error', response.message || 'Failed to resend OTP.', 'error');
+                    // Swal.fire('Error', response.message || 'Failed to resend OTP.', 'error');
                 }
             }
         });
@@ -1186,4 +1326,18 @@
             dataType: 'json'
         });
     }
+</script>
+<script>
+    // Hide loader after full page load
+    window.addEventListener('load', () => {
+        const loader = document.getElementById('loaderOverlay');
+        if (loader) loader.classList.add('hidden');
+    });
+
+    // Show loader + fade effect on page leave
+    window.addEventListener('beforeunload', () => {
+        document.body.classList.add('fade-out');
+        const loader = document.getElementById('loaderOverlay');
+        if (loader) loader.classList.remove('hidden');
+    });
 </script>
